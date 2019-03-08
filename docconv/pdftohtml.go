@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"golang.org/x/net/html"
 	"errors"
+	"regexp"
 )
 
 func ConvertPDF(r io.Reader) (string, map[string]string, error) {
@@ -115,7 +116,6 @@ func ConvertPDFHtml(file string) (BodyResult, MetaResult, error) {
 			}
 		}
 
-		fmt.Println(body.String())
 		bodyResult.body = body.String()
 
 		br <- bodyResult
@@ -140,7 +140,14 @@ func getHtmlBody(doc *html.Node) (string, error) {
 		var buf bytes.Buffer
 		w := io.Writer(&buf)
 		html.Render(w, b)
-		return buf.String(), nil
+
+		//过滤 <img/> 标签
+		reg, err := regexp.Compile("<img\\s[^>]+/>")
+		if err != nil {
+			fmt.Errorf("regexp fail", err)
+		}
+		str := reg.ReplaceAllString(buf.String(), "")
+		return str, nil
 	}
 	return "", errors.New("Missing <body> in the node tree")
 }
